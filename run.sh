@@ -7,4 +7,5 @@ export FLASK_APP=main.py
 # export S3_SECRET=
 [ -f .env ] && source .env
 
-flask run
+#flask run
+python3 main.py

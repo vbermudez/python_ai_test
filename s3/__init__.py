@@ -14,8 +14,11 @@ def read_config():
         , 'local_file': os.path.join(os.getcwd(), 'csv', 'data.csv')
     }
 
-def download_file():
+def download_file(local_path = None):
     cfg = read_config()
+
+    if local_path is None:
+        local_path = cfg['local_file']
 
     logging.info(f'Downloading {cfg["filename"]} fomr S3 Bucket {cfg["bucket"]}')
 
@@ -24,4 +27,4 @@ def download_file():
         , aws_access_key_id = cfg['key'] 
         , aws_secret_access_key = cfg['secret']
     )
-    s3.Object(cfg['bucket'], cfg['filename']).download_file(cfg['local_file'])
+    s3.Object(cfg['bucket'], cfg['filename']).download_file(local_path)

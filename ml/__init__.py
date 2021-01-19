@@ -1,11 +1,12 @@
 import os
+
 import pandas as pd
 import numpy as np
-
 from keras.models import Sequential, load_model
 from keras.layers import LSTM, Dropout, Dense
-
 from sklearn.preprocessing import MinMaxScaler
+
+from s3 import download_file
 
 class Model(object):
     def __init__(self, raw_path, model_path, train_count = 200, train_steps = 60):
@@ -17,22 +18,12 @@ class Model(object):
         self._data = None
         self._X_train = None
         self._Y_train = None
-
-
-        self._train_data = None
-        self._valid_data = None
         self._scaler = None
-        self._x_data = []
-        self._y_data = []
         self._model = None
 
         self.row_count = 0
         self.tip_avg = 0
-        self.exists = False
-
-        if ( os.path.isfile(self._model_path) ):
-            self._load_model()
-            self.exists = True
+        self.exists = os.path.isfile(self._model_path)
     
     def get_stats(self):
         if self.row_count == 0:
@@ -48,7 +39,7 @@ class Model(object):
 
     def train(self):
         print('Loading RAW DATA ...')
-        self._load_data(self._raw_path)
+        self._load_data()
         print('Preprocessing data ...')
         self._preprocess()
         print('Normalizing data ...')
@@ -58,14 +49,17 @@ class Model(object):
         print('Building model ...')
         self._build_model()
         print('Testing model ...')
-        self._test_model()
+        # self._test_model()
         print('Saving model ...')
         self._save()
         self.exists = True
         print('Training done!')
 
-    def _load_data(self, raw_data_path):
-        self._df = pd.read_csv(raw_data_path)
+    def _load_data(self):
+        if not os.path.isfile(self._raw_path):
+            download_file(self._raw_path)
+
+        self._df = pd.read_csv(self._raw_path)
 
         print(f'Tipos:\n{self._df.dtypes}')
         print(f'Cabecera:\n{self._df.head()}')
@@ -129,6 +123,7 @@ class Model(object):
 
     def _test_model(self):
         test_data = self._df[len(self._df) - 60:].values
+        print[f'Test data:\n{test_data}']
         test_data = test_data.reshape[-1, 1]
         test_data = self._scaler.transform(test_data)
         X_test = []
@@ -146,13 +141,3 @@ class Model(object):
 
     def _load_model(self):
         self._model = load_model(self._model_path)
-
-
-model = Model('~/test/python_ai_test/csv/data.csv', '~/test/python_ai_test/model/lstm_model.h5')
-
-if not model.exists: model.train()
-
-print(f'LINEAS={model.row_count}')
-print(f'AVERAGE tip_amout={model.tip_avg}')
-
-
