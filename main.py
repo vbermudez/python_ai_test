@@ -1,5 +1,6 @@
 import sys
 import logging
+import numpy as np
 
 #from s3 import read_config, download_file
 from ml import Model
@@ -25,4 +26,9 @@ row_count, tip_avg = model.get_stats()
 print(f'LINEAS={row_count}')
 print(f'AVERAGE tip_amout={tip_avg}')
 
-model._test_model()
+print( f'Predictions:\n{model.predict( np.array([[1.70], [2.70]]) )}' )
+# model._preprocess()
+# model._split_data(1000)
+# model._normalize()
+# model._load_model()
+# model._test_model()
