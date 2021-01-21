@@ -1,4 +1,5 @@
 import os
+import logging
 
 import pandas as pd
 import numpy as np
@@ -34,33 +35,43 @@ class Model(object):
             self._load_data()
 
         return self.row_count, self.tip_avg
+    
+    def prepare_model(self):
+        self._load_data()
+        self._preprocess()
+        self._normalize()
+        self._load_model()
 
     def predict(self, data):
         if not self.exists: return None
-        if self._model is None: self._load_model()
+        if self._model is None: self.prepare_model()
+        if type(data).__module__ != np.__name__: 
+            data = np.array(data)
+            data = np.reshape(data, (data.shape[0], data.shape[1], 1))
 
         predicted_total = self._model.predict(data)
+
         return self._scaler.inverse_transform(predicted_total)
 
     def train(self):
-        print('Loading RAW DATA ...')
+        logging.info('Loading RAW DATA ...')
         self._load_data()
-        print('Preprocessing data ...')
+        logging.info('Preprocessing data ...')
         self._preprocess()
-        print('Splitting data ...')
+        logging.info('Splitting data ...')
         self._split_data(1000)
-        print('Normalizing data ...')
+        logging.info('Normalizing data ...')
         self._normalize()
-        print('Preparing training datasets ...')
+        logging.info('Preparing training datasets ...')
         self._prepare_datasets()
-        print('Building model ...')
+        logging.info('Building model ...')
         self._build_model()
-        print('Testing model ...')
+        logging.info('Testing model ...')
         self._test_model()
-        print('Saving model ...')
+        logging.info('Saving model ...')
         self._save()
         self.exists = True
-        print('Training done!')
+        logging.info('Training done!')
 
     def _load_data(self):
         if not os.path.isfile(self._raw_path):
@@ -68,9 +79,9 @@ class Model(object):
 
         self._df = pd.read_csv(self._raw_path)
 
-        print(f'Tipos:\n{self._df.dtypes}')
-        print(f'Cabecera:\n{self._df.head()}')
-        print(f'Pie:\n{self._df.tail(7)}')
+        logging.info(f'Tipos:\n{self._df.dtypes}')
+        logging.info(f'Cabecera:\n{self._df.head()}')
+        logging.info(f'Pie:\n{self._df.tail(7)}')
         self.row_count = self._df.shape[0]
         self.tip_avg = self._df["tip_amount"].mean()
 
@@ -83,8 +94,8 @@ class Model(object):
         # self._df['tpep_pickup_datetime'] = pd.to_datetime(self._df.tpep_pickup_datetime, format = '%Y-%m-%d %H:%M:%S')
         # self._df.index = self._df['tpep_pickup_datetime']
         # self._df = self._df.sort_index(ascending = True, axis = 0)
-        print(f'Cabecera preparada:\n{self._df.head()}')
-        print(f'Pie preparada:\n{self._df.tail(7)}')
+        logging.info(f'Cabecera preparada:\n{self._df.head()}')
+        logging.info(f'Pie preparada:\n{self._df.tail(7)}')
     
     def _normalize(self):
         data = self._df.iloc[:, 1:2].values
@@ -144,12 +155,10 @@ class Model(object):
         for i in range(60, 76):
             X_test.append(inputs[i - 60:i, 0])
         
-        print(f'X_test:\n{X_test}')
         X_test = np.array(X_test)
         X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
         prediction = self.predict(X_test)
-        print(f'Predictions:\n{prediction}')
-        # print(f'Real:\n{real_data}')
+        return real_data, prediction
 
     def _save(self):
         self._model.save(self._model_path)
