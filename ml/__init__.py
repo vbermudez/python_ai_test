@@ -172,10 +172,6 @@ class Model(object):
     def _load_model(self):
         if self.row_count == 0:
             self._load_data()
-        
-        # if self._scaler is None:
-        #     self._preprocess()
-        #     self._normalize()
 
         self._scaler = joblib.load(self._scaler_path)
         self._model = load_model(self._model_path)
