@@ -6,6 +6,7 @@ import numpy as np
 from keras.models import Sequential, load_model
 from keras.layers import LSTM, Dropout, Dense
 from sklearn.preprocessing import MinMaxScaler
+import joblib
 
 from s3 import download_file
 
@@ -13,6 +14,10 @@ class Model(object):
     def __init__(self, raw_path, model_path, train_count = 200, train_steps = 60):
         self._raw_path = raw_path
         self._model_path = model_path
+        self._scaler_path = os.path.join(
+            os.path.abspath( os.path.dirname(model_path) )
+            , 'minmax_scaler.sclr'
+        )
         self._test_path = os.path.join(
             os.path.abspath( os.path.dirname(raw_path) )
             , 'test.csv'
@@ -162,15 +167,17 @@ class Model(object):
 
     def _save(self):
         self._model.save(self._model_path)
+        joblib.dump(self._scaler, self._scaler_path)
 
     def _load_model(self):
         if self.row_count == 0:
             self._load_data()
         
-        if self._scaler is None:
-            self._preprocess()
-            self._normalize()
+        # if self._scaler is None:
+        #     self._preprocess()
+        #     self._normalize()
 
+        self._scaler = joblib.load(self._scaler_path)
         self._model = load_model(self._model_path)
 
         

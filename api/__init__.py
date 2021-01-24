@@ -1,4 +1,6 @@
-from flask import Flask, Blueprint, jsonify, Response, request
+import logging
+from datetime import datetime
+from flask import Flask, Blueprint, Response, request, json
 from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
@@ -17,7 +19,7 @@ def index():
 def rows():
     row_count, tip_avg = app.model.get_stats()
     return Response(
-        response = jsonify({ 'rows': row_count})
+        response = json.dumps({ 'rows': row_count })
         , status = 200
         , headers = {'Access-Control-Allow-Origin': '*'}
     )
@@ -27,18 +29,24 @@ def rows():
 def tip_avg():
     row_count, tip_avg = app.model.get_stats()
     return Response(
-        response = jsonify({ 'tipAverage': tip_avg})
+        response = json.dumps({ 'tipAverage': tip_avg })
         , status = 200
         , headers = {'Access-Control-Allow-Origin': '*'}
     )
 
-@bp.route('/predict', methods = ['GET'])
+@bp.route('/predict', methods = ['POST'])
 @cross_origin()
 def predict():
-    data = request.json
-    prediction = app.model.predict(data.values)
+    data = json. request.get_json()
+    logging.info(f'RECV JSON:\n{data}')
+    predictions = app.model.predict( data['values'] )
+    app.db.predictions.insert_one({
+        'values': data['values']
+        , 'predictions': predictions.tolist()
+        , 'date': datetime.now()
+    })
     return Response(
-        response = jsonify({ 'tipAverage': tip_avg})
+        response = json.dumps({ 'predictions': predictions.tolist() })
         , status = 200
         , headers = {'Access-Control-Allow-Origin': '*'}
     )
